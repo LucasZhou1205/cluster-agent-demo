@@ -1,0 +1,574 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Takeout Cluster Agent · Orders</title>
+  <style>
+    :root {
+      --bg: #f4f6fb;
+      --panel: #ffffff;
+      --line: #e6e8ef;
+      --text: #111827;
+      --sub: #6b7280;
+      --brand: #5b57ff;
+      --brand-soft: #ecebff;
+      --ok: #10b981;
+      --warn: #f59e0b;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: radial-gradient(1200px 500px at 20% -20%, #eff2ff 0%, var(--bg) 50%);
+      color: var(--text);
+    }
+    .layout {
+      max-width: 1400px;
+      margin: 18px auto;
+      padding: 0 14px;
+      display: grid;
+      grid-template-columns: 250px minmax(700px, 1fr) 340px;
+      gap: 14px;
+    }
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      box-shadow: 0 10px 24px rgba(17, 24, 39, .05);
+    }
+    .sidebar {
+      padding: 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 800;
+      font-size: 18px;
+    }
+    .dot {
+      width: 32px;
+      height: 32px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, #5b57ff, #7a78ff);
+      color: white;
+      display: grid;
+      place-items: center;
+      font-size: 14px;
+      font-weight: 700;
+    }
+    .nav {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .nav-item {
+      border-radius: 10px;
+      padding: 10px 12px;
+      color: #374151;
+      font-weight: 600;
+      background: transparent;
+    }
+    .nav-item.active {
+      background: var(--brand-soft);
+      color: #322ff3;
+    }
+    .side-note {
+      padding: 12px;
+      border-radius: 12px;
+      background: #f9fafb;
+      color: var(--sub);
+      line-height: 1.5;
+      font-size: 12px;
+    }
+    .main {
+      padding: 16px;
+      display: grid;
+      gap: 14px;
+      align-content: start;
+    }
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+    }
+    .title {
+      font-size: 24px;
+      font-weight: 800;
+    }
+    .subtitle {
+      color: var(--sub);
+      font-size: 13px;
+      margin-top: 4px;
+    }
+    .actions {
+      display: flex;
+      gap: 8px;
+    }
+    button {
+      border: 0;
+      border-radius: 10px;
+      padding: 10px 14px;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .btn-main { background: var(--brand); color: white; }
+    .btn-light { background: #f3f4f6; color: #111827; }
+    .metrics {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+    }
+    .metric {
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 12px;
+      background: #fcfdff;
+    }
+    .metric .k { color: var(--sub); font-size: 12px; }
+    .metric .v { margin-top: 5px; font-size: 22px; font-weight: 800; }
+    .metric small { color: var(--sub); }
+    .order-form {
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 14px;
+      background: #ffffff;
+    }
+    .section-title {
+      font-size: 16px;
+      font-weight: 800;
+      margin-bottom: 10px;
+    }
+    .grid2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+    label {
+      font-size: 12px;
+      color: var(--sub);
+      display: block;
+      margin: 8px 0 6px;
+    }
+    input, select {
+      width: 100%;
+      border: 1px solid #d6d9e3;
+      border-radius: 10px;
+      padding: 10px;
+      font-size: 14px;
+      background: #fff;
+    }
+    .rooms {
+      display: grid;
+      gap: 10px;
+    }
+    .match-box {
+      margin-top: 10px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 10px;
+      background: #fafbff;
+      display: grid;
+      gap: 8px;
+    }
+    .match-item {
+      border: 1px solid #e4e7f5;
+      border-radius: 10px;
+      padding: 10px;
+      background: #fff;
+      font-size: 13px;
+    }
+    .match-title {
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+    .room {
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 12px;
+      background: #fff;
+    }
+    .room-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+    }
+    .tag {
+      border-radius: 999px;
+      padding: 4px 9px;
+      font-size: 12px;
+      font-weight: 700;
+    }
+    .tag-open { background: #eefcf6; color: #047857; }
+    .tag-paid { background: #eef2ff; color: #4338ca; }
+    .order-item {
+      margin-top: 8px;
+      border-top: 1px dashed #e5e7eb;
+      padding-top: 8px;
+      font-size: 13px;
+    }
+    .order-item .u { font-weight: 700; }
+    .right {
+      padding: 16px;
+      display: grid;
+      gap: 12px;
+      align-content: start;
+    }
+    .wallet-list, .merchant-list {
+      display: grid;
+      gap: 8px;
+    }
+    .wallet-row, .merchant-row {
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 14px;
+    }
+    .log {
+      border-radius: 12px;
+      background: #0f172a;
+      color: #d7dded;
+      padding: 12px;
+      min-height: 220px;
+      max-height: 320px;
+      overflow: auto;
+      white-space: pre-wrap;
+      font-size: 12px;
+      line-height: 1.5;
+    }
+    @media (max-width: 1200px) {
+      .layout { grid-template-columns: 1fr; }
+      .metrics { grid-template-columns: repeat(2, 1fr); }
+      .grid2 { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="layout">
+    <aside class="card sidebar">
+      <div class="brand">
+        <div class="dot">TC</div>
+        <div>Takeout Cluster</div>
+      </div>
+      <div class="nav">
+        <div class="nav-item active">Orders</div>
+        <div class="nav-item">Rooms</div>
+        <div class="nav-item">Payments</div>
+        <div class="nav-item">Risk</div>
+      </div>
+      <div class="side-note">
+        演示模式：同餐厅 + 同地址 + 时间窗内自动拼单。<br/>
+        点击结算后展示用户扣款、平台收益、商户到账。
+      </div>
+    </aside>
+
+    <main class="card main">
+      <section class="topbar">
+        <div>
+          <div class="title">Orders</div>
+          <div class="subtitle">Design-Takeout-Cluster-Agent · 可视化演示页</div>
+        </div>
+        <div class="actions">
+          <button id="refreshState" class="btn-light">刷新</button>
+          <button id="resetDemo" class="btn-light">重置</button>
+        </div>
+      </section>
+
+      <section class="metrics" id="summaryMetrics"></section>
+
+      <section class="order-form">
+        <div class="section-title">创建订单</div>
+        <div class="grid2">
+          <div>
+            <label>下单用户</label>
+            <select id="user"></select>
+          </div>
+          <div>
+            <label>餐厅</label>
+            <select id="restaurant"></select>
+          </div>
+        </div>
+        <label>地址标签</label>
+        <select id="address"></select>
+        <div class="grid2">
+          <div>
+            <label>固定套餐</label>
+            <select id="menuItem"></select>
+          </div>
+          <div>
+            <label>数量</label>
+            <input id="qty" type="number" value="1" min="1" />
+          </div>
+        </div>
+        <label>单价</label>
+        <input id="price" type="number" min="1" step="0.01" value="32" />
+        <label>时间容忍上限（分钟）</label>
+        <input id="tolerance" type="number" min="1" value="5" />
+        <div style="margin-top: 12px;">
+          <button id="submitOrder" class="btn-main" style="width: 100%;">分享至 Cluster 拼单</button>
+        </div>
+        <div id="matchingPanel" class="match-box" style="display:none;"></div>
+      </section>
+
+      <section>
+        <div class="section-title">拼单房间</div>
+        <div id="rooms" class="rooms"></div>
+      </section>
+    </main>
+
+    <aside class="card right">
+      <section>
+        <div class="section-title">用户钱包</div>
+        <div id="wallets" class="wallet-list"></div>
+      </section>
+      <section>
+        <div class="section-title">商户与平台</div>
+        <div id="merchants" class="merchant-list"></div>
+      </section>
+      <section>
+        <div class="section-title">执行日志</div>
+        <div id="log" class="log"></div>
+      </section>
+    </aside>
+  </div>
+
+  <script>
+    const el = (id) => document.getElementById(id);
+    const toNum = (v) => Number.parseFloat(v || "0");
+    const toInt = (v) => Number.parseInt(v || "0", 10);
+    const log = (msg) => {
+      const t = new Date().toLocaleTimeString();
+      el("log").textContent = `[${t}] ${msg}\n` + el("log").textContent;
+    };
+    const merchantMap = {};
+    const menuCatalog = {};
+
+    async function call(url, method = "GET", data = null) {
+      const res = await fetch(url, {
+        method,
+        headers: { "Content-Type": "application/json" },
+        body: data ? JSON.stringify(data) : null
+      });
+      if (!res.ok) {
+        const text = await res.text();
+        throw new Error(text || "请求失败");
+      }
+      return await res.json();
+    }
+
+    function renderSummary(state) {
+      const roomCount = state.rooms.length;
+      const openCount = state.rooms.filter(r => r.status === "OPEN").length;
+      const orderCount = state.rooms.reduce((acc, r) => acc + r.orders.length, 0);
+      const platformBalance = state.platform_balance;
+      el("summaryMetrics").innerHTML = `
+        <div class="metric"><div class="k">活跃房间</div><div class="v">${openCount}</div><small>Total ${roomCount}</small></div>
+        <div class="metric"><div class="k">订单总数</div><div class="v">${orderCount}</div><small>实时拼单池</small></div>
+        <div class="metric"><div class="k">平台累计收益</div><div class="v">¥${platformBalance}</div><small>来自节省配送费20%</small></div>
+        <div class="metric"><div class="k">状态</div><div class="v" style="font-size:18px;">Agent Running</div><small>订单引擎在线</small></div>
+      `;
+    }
+
+    function renderWallets(state) {
+      el("wallets").innerHTML = Object.entries(state.balances)
+        .map(([user, balance]) => `<div class="wallet-row"><span>${user}</span><strong>¥${balance}</strong></div>`)
+        .join("");
+    }
+
+    function renderMerchants(state) {
+      const merchantRows = Object.entries(state.merchant_balances)
+        .map(([merchant, balance]) => {
+          const p = merchantMap[merchant];
+          const promo = p ? `满${p.free_threshold}减配送${p.max_waiver}` : "无活动";
+          return `<div class="merchant-row"><span>${merchant}<div style="font-size:11px;color:#6b7280;">${promo}</div></span><strong>¥${balance}</strong></div>`;
+        })
+        .join("");
+      const platform = `<div class="merchant-row"><span>platform:revenue</span><strong>¥${state.platform_balance}</strong></div>`;
+      el("merchants").innerHTML = merchantRows + platform;
+    }
+
+    function renderRooms(state) {
+      if (!state.rooms.length) {
+        el("rooms").innerHTML = `<div class="room"><div style="color:#6b7280;">暂无房间，先创建订单即可进入演示流程。</div></div>`;
+        return;
+      }
+      el("rooms").innerHTML = state.rooms.map(room => {
+        const statusTag = room.status === "OPEN"
+          ? `<span class="tag tag-open">OPEN</span>`
+          : `<span class="tag tag-paid">${room.status}</span>`;
+        const ordersHtml = room.orders.map(o => `
+          <div class="order-item">
+            <div class="u">${o.user_id} · ¥${o.food_subtotal}</div>
+            ${o.items.map(i => `<div style="color:#6b7280;">${i.name} × ${i.quantity} · ¥${i.unit_price}</div>`).join("")}
+          </div>
+        `).join("");
+        const action = room.status === "OPEN"
+          ? `<button class="btn-main" style="margin-top:10px;" onclick="checkoutRoom('${room.room_id}')">执行结算</button>`
+          : `<div style="margin-top:10px;color:#6b7280;font-size:12px;">该房间已结算完成</div>`;
+        return `
+          <div class="room">
+            <div class="room-top">
+              <div><strong>Room ${room.room_id.slice(0, 8)}...</strong><div style="color:#6b7280;font-size:12px;">${room.restaurants.join(" + ")} · ${room.address_tag}</div></div>
+              ${statusTag}
+            </div>
+            ${ordersHtml}
+            ${action}
+          </div>
+        `;
+      }).join("");
+    }
+
+    function renderState(state) {
+      renderSummary(state);
+      renderWallets(state);
+      renderMerchants(state);
+      renderRooms(state);
+      if (state.merchant_profiles) {
+        state.merchant_profiles.forEach(m => {
+          merchantMap[m.id] = m;
+        });
+      }
+      if (state.menu_catalog) {
+        Object.keys(state.menu_catalog).forEach((k) => {
+          menuCatalog[k] = state.menu_catalog[k];
+        });
+      }
+    }
+
+    function refreshMenuSelect() {
+      const restaurantId = el("restaurant").value;
+      const menu = menuCatalog[restaurantId] || [];
+      el("menuItem").innerHTML = menu.map(i => `<option value="${i.name}" data-price="${i.price}">${i.name} · ¥${i.price}</option>`).join("");
+      if (menu.length) {
+        el("price").value = menu[0].price;
+      }
+    }
+
+    async function bootstrap() {
+      const data = await call("/api/bootstrap");
+      el("user").innerHTML = data.users.map(u => `<option value="${u}">${u}</option>`).join("");
+      el("restaurant").innerHTML = data.restaurants.map(r => `<option value="${r.id}">${r.name} (${r.id}) · 满${r.free_threshold}减配送${r.max_waiver}</option>`).join("");
+      el("address").innerHTML = data.addresses.map(a => `<option value="${a.tag}">${a.tag}</option>`).join("");
+      Object.keys(data.menu_catalog || {}).forEach((k) => {
+        menuCatalog[k] = data.menu_catalog[k];
+      });
+      el("address").value = data.default_address;
+      refreshMenuSelect();
+      renderState(data.state);
+      log("页面初始化完成");
+    }
+
+    async function refreshState() {
+      const state = await call("/api/state");
+      renderState(state);
+      log("状态已刷新");
+    }
+
+    function renderMatching(matching) {
+      if (!matching) {
+        el("matchingPanel").style.display = "none";
+        return;
+      }
+      const rows = [];
+      matching.precise_options.forEach(o => {
+        rows.push(`<div class="match-item"><div class="match-title">精准匹配｜${o.level}</div><div>目标订单: ${o.target_order_id.slice(0, 8)}... ｜ 配送费 ${o.before_delivery} → ${o.after_delivery_share}，预估省 ¥${o.saving_amount}</div></div>`);
+      });
+      matching.fuzzy_geo_options.forEach(o => {
+        rows.push(`<div class="match-item"><div class="match-title">模糊协商｜地理</div><div>${o.target_restaurant_name} 距离 ${o.merchant_distance_m}m，配送费降幅 ${o.drop_rate}</div></div>`);
+      });
+      matching.fuzzy_brand_options.forEach(o => {
+        rows.push(`<div class="match-item"><div class="match-title">模糊协商｜品牌</div><div>${o.category}同类替换到 ${o.target_restaurant_name}，净省 ${o.net_saving_rate}</div></div>`);
+      });
+      if (matching.wait_suggestion) {
+        rows.push(`<div class="match-item"><div class="match-title">时间建议</div><div>${matching.wait_suggestion.message}，再补 ¥${matching.wait_suggestion.missing_amount_to_threshold} 可能触发减免</div></div>`);
+      }
+      (matching.upsell_suggestions || []).forEach(s => {
+        const items = s.recommended_items.map(i => `${i.name}(¥${i.price})`).join("、");
+        rows.push(`<div class="match-item"><div class="match-title">加购冲免配送费｜${s.restaurant_name}</div><div>当前 ¥${s.current_subtotal}，距离门槛 ¥${s.threshold} 还差 ¥${s.gap_to_free_delivery}。推荐：${items}</div></div>`);
+      });
+      if (matching.delivery_projection) {
+        rows.push(`<div class="match-item"><div class="match-title">配送费测算</div><div>原始 ¥${matching.delivery_projection.baseline_delivery} → 聚合后 ¥${matching.delivery_projection.merged_delivery}，节省 ¥${matching.delivery_projection.saved_delivery}</div></div>`);
+      }
+      if (matching.request_closed) {
+        rows.push(`<div class="match-item"><div class="match-title">退出机制触发</div><div>超过 ${matching.tolerance_minutes} 分钟未达成匹配，本需求已自动关闭</div></div>`);
+      }
+      if (matching.auto_settled) {
+        rows.push(`<div class="match-item"><div class="match-title">自动结算</div><div>已满足配送费减免条件，系统已自动完成结算</div></div>`);
+      }
+      if (matching.prompt_settle) {
+        rows.push(`<div class="match-item"><div class="match-title">待确认结算</div><div>已匹配到相近商家并触发配送费5折，是否现在结算？可直接在房间中点击“执行结算”</div></div>`);
+      }
+      if (!rows.length) {
+        rows.push(`<div class="match-item"><div class="match-title">暂无优选匹配</div><div>系统将继续扫描同楼同商家与相近地址订单</div></div>`);
+      }
+      el("matchingPanel").style.display = "grid";
+      el("matchingPanel").innerHTML = rows.join("");
+    }
+
+    async function submitOrder() {
+      const payload = {
+        user_id: el("user").value,
+        restaurant_id: el("restaurant").value,
+        address_tag: el("address").value,
+        item_name: el("menuItem").value,
+        unit_price: toNum(el("price").value),
+        quantity: toInt(el("qty").value),
+        tolerance_minutes: toInt(el("tolerance").value),
+        idempotency_key: `${el("user").value}-${Date.now()}`
+      };
+      try {
+        const data = await call("/api/order", "POST", payload);
+        renderState(data.state);
+        renderMatching(data.matching);
+        log(`已分享至Cluster，room=${data.room_id.slice(0, 8)} order=${data.order_id.slice(0, 8)}`);
+        if (data.matching?.auto_settled) {
+          log(`系统自动结算完成：满足免配送费条件`);
+        } else if (data.matching?.prompt_settle) {
+          log(`已触发相近商家5折配送费，等待你决定是否立即结算`);
+        }
+      } catch (e) {
+        log(`下单失败: ${e.message}`);
+      }
+    }
+
+    async function checkoutRoom(roomId) {
+      try {
+        const data = await call(`/api/checkout/${roomId}`, "POST", {});
+        renderState(data.state);
+        log(`结算成功 room=${roomId.slice(0, 8)} total=¥${data.settlement.total_payable}`);
+      } catch (e) {
+        log(`结算失败: ${e.message}`);
+      }
+    }
+    window.checkoutRoom = checkoutRoom;
+
+    el("submitOrder").addEventListener("click", submitOrder);
+    el("refreshState").addEventListener("click", refreshState);
+    el("restaurant").addEventListener("change", refreshMenuSelect);
+    el("menuItem").addEventListener("change", () => {
+      const opt = el("menuItem").selectedOptions[0];
+      if (opt) {
+        el("price").value = opt.dataset.price || el("price").value;
+      }
+    });
+    el("resetDemo").addEventListener("click", async () => {
+      const data = await call("/api/reset", "POST", {});
+      renderState(data.state);
+      renderMatching(null);
+      log("演示环境已重置");
+    });
+
+    bootstrap();
+  </script>
+</body>
+</html>
