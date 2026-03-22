@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 from decimal import Decimal
 
 from flask import Flask, jsonify, render_template, request
@@ -65,6 +66,22 @@ def _serialize_state(agent: GroupOrderAgent, ledger: Ledger) -> dict:
     }
 
 
+def _agent_store_path() -> str:
+    """Use /tmp on read-only serverless roots (e.g. Vercel when cwd is not writable)."""
+    override = os.environ.get("AGENT_STORE_PATH")
+    if override:
+        return override
+    tmp_root = os.environ.get("TMPDIR", "/tmp")
+    probe = os.path.join(os.getcwd(), ".write_probe")
+    try:
+        with open(probe, "w", encoding="utf-8") as f:
+            f.write("ok")
+        os.remove(probe)
+        return "cluster_pool.db"
+    except OSError:
+        return os.path.join(tmp_root, "cluster_pool.db")
+
+
 def _create_runtime() -> tuple[GroupOrderAgent, Ledger]:
     ledger = Ledger()
     for user in USERS:
@@ -79,11 +96,13 @@ def _create_runtime() -> tuple[GroupOrderAgent, Ledger]:
             fuzzy_merchant_distance_meters=200,
             default_tolerance_minutes=5,
         ),
+        store_path=_agent_store_path(),
     )
     return agent, ledger
 
 
-app = Flask(__name__)
+_BASE = os.path.dirname(os.path.abspath(__file__))
+app = Flask(__name__, template_folder=os.path.join(_BASE, "templates"))
 app.config["JSON_AS_ASCII"] = False
 RUNTIME_AGENT, RUNTIME_LEDGER = _create_runtime()
 
